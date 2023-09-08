@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile-php
+    volumes:
+      - ./:/var/www/html # syn project dir with container web dir
+    ports:
+      - 80:80
+      - 443:443 # for future ssl traffic?
+    depends_on:
+      - mydatabase
+    networks:
+      - docker-internal-network
+
+  mydatabase:
+    image: mysql:latest
+    environment:
+      - MYSQL_DATABASE=my_database # This should be in the .env file
+      - MYSQL_USER=nhung
+      - MYSQL_PASSWORD=password
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+    volumes:
+      - "./database_local:/docker-entrypoint-initdb.d" # sync local sql file with container
+    networks:
+      - docker-internal-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8002:80
+    environment:
+      - PMA_HOST=mydatabase
+      - PMA_PORT=3306
+    depends_on:
+      - mydatabase
+    networks:
+      - docker-internal-network
+
+networks:
+  docker-internal-network:
+    driver: bridge
